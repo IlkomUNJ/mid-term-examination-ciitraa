@@ -352,4 +352,87 @@ impl BstNode {
             Some(x) => Some(x.upgrade().unwrap()),
         }
     }
+
+    pub fn add_node(&self, target_node: &BstNodeLink, value: i32) -> bool {
+        if self.tree_search(&value).is_some() {
+            return false;
+        }
+        BstNode::tree_insert(&Some(target_node.clone()), &value);
+        true
+    }
+
+     pub fn tree_predecessor(node: &BstNodeLink) -> Option<BstNodeLink> {
+        if let Some(left_node) = &node.borrow().left {
+            return Some(left_node.borrow().maximum());
+        }
+        let mut current_node = node.clone();
+        let mut parent_node = BstNode::upgrade_weak_to_strong(current_node.borrow().parent.clone());
+
+        while let Some(parent) = parent_node {
+            if let Some(right_child) = &parent.borrow().right {
+                if BstNode::is_node_match(right_child, &current_node) {
+                    return Some(parent.clone());
+                }
+            }
+
+            current_node = parent.clone();
+            parent_node = BstNode::upgrade_weak_to_strong(parent.borrow().parent.clone());
+        }
+        None
+    }
+
+    pub fn median(&self) -> BstNodeLink {
+        let mut nodes = Vec::new();
+        fn io_traversal(node: &Option<BstNodeLink>, nodes: &mut Vec<BstNodeLink>) {
+            if let Some(ref n) = node {
+                io_traversal(&n.borrow().left, nodes);
+                nodes.push(n.clone());
+                io_traversal(&n.borrow().right, nodes);
+            }
+        }
+        io_traversal(&Some(self.get_bst_nodelink_copy()), &mut nodes);
+
+        let median_index = nodes.len() / 2;
+        nodes[median_index].clone()
+    }
+
+    pub fn tree_rebalance(node: &BstNodeLink) -> BstNodeLink {
+        fn io_collect(node: &Option<BstNodeLink>, keys: &mut Vec<i32>) {
+            if let Some(ref n) = node {
+                io_collect(&n.borrow().left, keys);
+                keys.push(n.borrow().key.unwrap());
+                io_collect(&n.borrow().right, keys);
+            }
+        }
+
+        fn build_balanced_bst(keys: &[i32], start: usize, end: usize) -> Option<BstNodeLink> {
+            if start > end {
+                return None;
+            }
+
+            let mid = (start + end) / 2;
+            let root = BstNode::new_bst_nodelink(keys[mid]);
+
+            if mid > 0 {
+                root.borrow_mut().left = build_balanced_bst(keys, start, mid - 1);
+            } else {
+                root.borrow_mut().left = None;
+            }
+
+            root.borrow_mut().right = build_balanced_bst(keys, mid + 1, end);
+            if let Some(ref left_child) = root.borrow().left {
+                left_child.borrow_mut().parent = Some(BstNode::downgrade(&root));
+            }
+
+            if let Some(ref right_child) = root.borrow().right {
+                right_child.borrow_mut().parent = Some(BstNode::downgrade(&root));
+            }
+
+            Some(root)
+        }
+        
+        let mut keys = Vec::new();
+        io_collect(&Some(node.clone()), &mut keys);
+        build_balanced_bst(&keys, 0, keys.len() - 1).unwrap()
+    }
 }

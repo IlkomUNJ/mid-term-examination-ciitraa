@@ -62,6 +62,22 @@ fn test_binary_search_tree(){
     let main_tree_path = "bst_graph.dot";
     generate_dotfile_bst(&rootlink, main_tree_path);
 
+    let add_result = rootlink.borrow().add_node(&rootlink, 23);
+    println!("Add node 23 result is {}", add_result);
+
+    if let Some(predecessor) = BstNode::tree_predecessor(&rootlink) {
+        println!("Predecessor of root is {:?}", predecessor.borrow().key);
+    } else {
+        println!("No predecessor found for root.");
+    }
+
+    let median_node = rootlink.borrow().median();
+    println!("Median result {:?}", median_node.borrow().key);
+
+    let rebalanced_root = BstNode::tree_rebalance(&rootlink);
+    generate_dotfile_bst(&rebalanced_root, "bst_rebalanced.dot");
+    println!("Tree rebalanced and saved to bst_rebalanced.dot");
+
     //tree search test
     let search_keys = vec![15, 9, 22];
 
@@ -92,7 +108,7 @@ fn test_binary_search_tree(){
         2, // min_node, should return its parent Some(3)
         20, // max_node, should return None
         15, // root_node, should return the minimum of its right tree
-        // test case for node with empty right child
+        4,// test case for node with empty right child
         // should return a parent of the node's ancestor if it's a left child of the parent
         13,
         9, 7, // other keys
